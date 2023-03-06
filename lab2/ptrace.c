@@ -6,6 +6,14 @@
 #include <sys/user.h>
 #include <sys/reg.h>
 
+void print_fun(int name) {
+	switch(name) {
+		case 1: printf("write\n");
+		       	break;
+		default: printf("unknown\n");
+			 break;
+	}
+}
 
 void child() {
   ptrace(PTRACE_TRACEME, 0, 0, 0);
@@ -32,10 +40,8 @@ void parent(pid_t pid) {
      			 ptrace(PTRACE_SYSCALL, pid, 0, 0);
      			 waitpid(pid, &status, 0);
    		 }
-	if (state.orig_eax == 1) {
-       		 char * text = (char *)state.rcx;
-       		 ptrace(PTRACE_POKETEXT, pid, (void*)(text+7), 0x72626168); //habr
-       		 ptrace(PTRACE_POKETEXT, pid, (void*)(text+11), 0x00000a21); //!\n
+	if (state.orig_rax == 1) {
+		print_fun(state.orig_rax);
       }
 
   }
