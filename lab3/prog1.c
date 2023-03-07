@@ -5,9 +5,17 @@
 #include <limits.h>
 #include <unistd.h>
 #include <sys/stat.h>
-#define N 50
 
-void erase_format(char *name, char* format) {
+long file_length(struct dirent *dir) {
+    FILE *file = fopen(dir->d_name, "r");
+    fseek(file, 0, SEEK_END);
+    long size = ftell(file);
+    fseek(file, 0, SEEK_SET);
+    fclose(file);
+    return size;
+}
+
+void erase_format(char *name, char *format) {
     int j = 0, is_format = 0, format_point = strlen(name);
     for (int i = 0; i < strlen(name); i++) {
         if (name[i] == '.') {
@@ -24,71 +32,90 @@ void erase_format(char *name, char* format) {
 }
 
 void reverse(char *name) {
-    for (int i = 0; i < strlen(name)/2; i++) {
+    for (int i = 0; i < strlen(name) / 2; i++) {
         char k = name[i];
         name[i] = name[strlen(name) - 1 - i];
         name[strlen(name) - 1 - i] = k;
     }
 }
 
-void read_file(FILE *f_in, char *file_data) {
-    char *tmp = malloc(N * sizeof(char));
+void read_file(struct dirent *dir, char *file_data) {
+    FILE *f_in = fopen(dir->d_name, "r");
+    fseek(f_in, 0, SEEK_END);
+    long size = ftell(f_in);
+    fseek(f_in, 0, SEEK_SET);
+    char *tmp = malloc(size * sizeof(char));
     do {
-        fgets(tmp, N, f_in);
+        fgets(tmp, size, f_in);
         strcat(file_data, tmp);
     } while (!feof(f_in));
     free(tmp);
 }
 
+
+void create_reverse_file_name(struct dirent *dir, char *file_name, char *file_data) {
+    FILE *file;
+
+    char *format = calloc(FILENAME_MAX, sizeof(char));
+    strcpy(file_name, dir->d_name);
+    erase_format(file_name, format);
+    reverse(file_name);
+    strcat(file_name, format);
+    free(format);
+}
+
+void write_file(char *file_name, char *file_data) {
+    FILE *f_out;
+    f_out = fopen(file_name, "w");
+    reverse(file_data);
+    fputs(file_data, f_out);
+    fclose(f_out);
+}
+
 int main(int argc, char *argv[]) {
     DIR *d;
-    FILE *f_in, *f_out;
     struct dirent *dir;
     char *dirname = argv[1];
-    char *file_data = malloc(N * N * sizeof(char));
-    char *new_dirname = malloc(N * sizeof(char));
-    char *file_name = malloc(N * sizeof(char));
-    char *format = malloc(N * sizeof(char));
+    char *file_data = malloc(sizeof(char));
+    char *new_dirname = malloc(PATH_MAX * sizeof(char));
+    char *file_name = malloc(NAME_MAX * sizeof(char));
     unsigned int i = 0;
-    i = 0;
-    realpath(dirname, dirname);
-    d = opendir(dirname);
+    long size;
+    if (!realpath(dirname, dirname)) {
+        perror("Can't find directory.");
+        return 1;
+    }
+    if (!(d = opendir(dirname))) {
+        perror("Can't open directory.");
+        return 1;
+    }
     while (i <= strlen(dirname) && dirname[strlen(dirname) - i - 1] != '/') {
         new_dirname[i] = dirname[strlen(dirname) - i - 1];
         i++;
     }
     new_dirname[i] = '\0';
     chdir("..");
-    mkdir(new_dirname, 0700);
-    realpath(new_dirname, new_dirname);
-    if (d) {
-        while ((dir = readdir(d)) != NULL) {
-            if (strcmp(dir->d_name, ".") != 0 && strcmp(dir->d_name, "..") != 0) {
-                strcpy(file_name, dir->d_name);
-                erase_format(file_name, format);
-                reverse(file_name);
-                strcat(file_name, format);
-                format[0] = '\0';
-                chdir("..");
-                chdir(dirname);
-                f_in = fopen(dir->d_name, "r");
-                if (f_in) {
-                    read_file(f_in, file_data);
-                    fclose(f_in);
-                }
-                chdir("..");
-                chdir(new_dirname);
-                f_in = fopen(file_name, "w");
-                reverse(file_data);
-                if (f_in) {
-                    fputs(file_data, f_in);
-                    fclose(f_in);
-                }
-                file_data[0] = '\0';
-            }
-        }
-        closedir(d);
+    if (!(mkdir(new_dirname, 0700))) {
+        perror("Can't create directory.");
+        return 1;
     }
+    realpath(new_dirname, new_dirname);
+
+    while ((dir = readdir(d)) != NULL) {
+        if (strcmp(dir->d_name, ".") != 0 && strcmp(dir->d_name, "..") != 0) {
+            chdir(dirname);
+            create_reverse_file_name(dir, file_name, file_data);
+            size = file_length(dir);
+            if (strlen(file_data) < size) {
+                file_data = realloc(file_data, size * sizeof(char));
+            }
+            file_data[0] = '\0';
+            read_file(dir, file_data);
+            chdir(new_dirname);
+            write_file(file_name, file_data);
+        }
+    }
+    closedir(d);
     free(file_data);
     free(new_dirname);
     free(file_name);
