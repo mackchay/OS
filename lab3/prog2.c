@@ -4,17 +4,65 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <string.h>
+#include <linux/limits.h>
+#include <dirent.h>
 
-void create_directory(char *path) {
-    mkdir(path, 0777);
+void create_directory(char *path, mode_t mode) {
+    mkdir(path, mode);
 }
 
 void display_directory_contents(char *path) {
-    system("ls -alh path");
+    DIR *d;
+    struct dirent *dir;
+    d = opendir(".");
+    if (d)
+    {
+        while ((dir = readdir(d)) != NULL)
+        {
+            printf("%s\n", dir->d_name);
+        }
+        closedir(d);
+    }
 }
 
-void remove_directory(char *path) {
-    rmdir(path);
+int remove_directory(char *path) {
+    DIR *dir = opendir(path);
+    int r1 = -1;
+    if (dir) {
+        struct dirent *entity;
+
+        size_t len, path_len = strlen(path);
+        r1 = 0;
+        while ((entity = readdir(dir)) && !r1) {
+            int r2 = -1;
+            if (!strcmp(entity->d_name, ".") || !strcmp(entity->d_name, "..")) {
+                continue;
+            }
+
+            char *entity_path;
+            len = path_len + strlen(entity->d_name) + 2;
+            entity_path = malloc(len);
+
+            if (entity_path) {
+                struct stat st;
+
+                snprintf(entity_path, len, "%s/%s", path, entity->d_name);
+                if (!stat(entity_path, &st)) {
+                    if (S_ISDIR(st.st_mode))
+                        r2 = remove_directory(entity_path);
+                    else
+                        r2 = unlink(entity_path);
+                }
+                free(entity_path);
+            }
+            r1 = r2;
+        }
+        closedir(dir);
+    }
+    if (!r1)
+        r1 = rmdir(path);
+
+    return r1;
 }
 
 void create_file(char *path) {
@@ -92,7 +140,12 @@ int main(int argc, char *argv[]) {
     char *path = argv[2];
 
     if (strcmp(action, "create_directory") == 0) {
-        create_directory(path);
+        if (argc < 3) {
+            printf("Usage: %s create_directory <target> <link>\n", argv[0]);
+            return 1;
+        }
+        mode_t mode = strtol(argv[3], NULL, 8);
+        create_directory(path, mode);
     } else if (strcmp(action, "display_directory_contents") == 0) {
         display_directory_contents(path);
     } else if (strcmp(action, "remove_directory") == 0) {
