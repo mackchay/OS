@@ -4,24 +4,27 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <string.h>
-#include <linux/limits.h>
 #include <dirent.h>
+#define BUFFER_SIZE 4096
 
 void create_directory(char *path, mode_t mode) {
-    mkdir(path, mode);
+    if (mkdir(path, mode) == -1) {
+        perror("Can't create directory.");
+    }
 }
 
 void display_directory_contents(char *path) {
     DIR *d;
     struct dirent *dir;
-    d = opendir(".");
-    if (d)
-    {
-        while ((dir = readdir(d)) != NULL)
-        {
+    d = opendir(path);
+    if (d) {
+        while ((dir = readdir(d)) != NULL) {
             printf("%s\n", dir->d_name);
         }
         closedir(d);
+    }
+    else {
+        perror("Directory does not exist.");
     }
 }
 
@@ -59,6 +62,10 @@ int remove_directory(char *path) {
         }
         closedir(dir);
     }
+    else {
+        perror("Directory does not exist.");
+    }
+
     if (!r1)
         r1 = rmdir(path);
 
@@ -68,19 +75,27 @@ int remove_directory(char *path) {
 void create_file(char *path) {
     FILE *file = fopen(path, "w");
     fclose(file);
+    printf("%s", path);
 }
 
 void display_file_contents(char *path) {
     FILE *file = fopen(path, "r");
     int c;
-    while ((c = fgetc(file)) != EOF) {
-        putchar(c);
+    if (file) {
+        while ((c = fgetc(file)) != EOF) {
+            putchar(c);
+        }
+    }
+    else {
+        perror("File doesn't exist.");
     }
     fclose(file);
 }
 
 void remove_file(char *path) {
-    remove(path);
+    if (remove(path) == -1) {
+        perror("Can't delete this file.");
+    }
 }
 
 void create_symbolic_link(char *target_path, char *link_path) {
@@ -88,25 +103,33 @@ void create_symbolic_link(char *target_path, char *link_path) {
 }
 
 void display_symbolic_link_contents(char *path) {
-    char buf[1024];
+    char buf[BUFFER_SIZE];
     ssize_t len = readlink(path, buf, sizeof(buf) - 1);
     if (len != -1) {
         buf[len] = '\0';
         printf("%s\n", buf);
     }
+    else {
+        perror("Symbolic link does not exist.");
+    }
 }
 
 void display_symbolic_link_target_contents(char *path) {
-    char buf[1024];
+    char buf[BUFFER_SIZE];
     ssize_t len = readlink(path, buf, sizeof(buf) - 1);
     if (len != -1) {
         buf[len] = '\0';
         display_file_contents(buf);
     }
+    else {
+        perror("Symbolic link does not exist.");
+    }
 }
 
 void remove_symbolic_link(char *path) {
-    remove(path);
+    if (remove(path) == -1) {
+        perror("Can't remove symbolic link.");
+    }
 }
 
 void create_hard_link(char *target_path, char *link_path) {
@@ -114,21 +137,40 @@ void create_hard_link(char *target_path, char *link_path) {
 }
 
 void remove_hard_link(char *path) {
-    remove(path);
+    if (remove(path) == -1) {
+        perror("Can't remove hard link.");
+    }
 }
 
 void display_permissions_and_hard_links(char *path) {
+
     struct stat sb;
     if (stat(path, &sb) == -1) {
-        perror("stat");
-        exit(EXIT_FAILURE);
+        perror("Entity does not exist.");
     }
-    printf("Permissions: %o\n", sb.st_mode & 0777);
-    printf("Number of hard links: %ld\n", sb.st_nlink);
+    else {
+        printf("Permissions: %o\n", sb.st_mode & 0777);
+        printf("File Permissions: \t");
+        printf( (S_ISDIR(sb.st_mode)) ? "d" : "-");
+        printf( (sb.st_mode & S_IRUSR) ? "r" : "-");
+        printf( (sb.st_mode & S_IWUSR) ? "w" : "-");
+        printf( (sb.st_mode & S_IXUSR) ? "x" : "-");
+        printf( (sb.st_mode & S_IRGRP) ? "r" : "-");
+        printf( (sb.st_mode & S_IWGRP) ? "w" : "-");
+        printf( (sb.st_mode & S_IXGRP) ? "x" : "-");
+        printf( (sb.st_mode & S_IROTH) ? "r" : "-");
+        printf( (sb.st_mode & S_IWOTH) ? "w" : "-");
+        printf( (sb.st_mode & S_IXOTH) ? "x" : "-");
+        printf("\n\n");
+
+        printf("Number of hard links: %ld\n", sb.st_nlink);
+    }
 }
 
 void change_permissions(char *path, mode_t mode) {
-    chmod(path, mode);
+    if (chmod(path, mode) == -1) {
+        perror("Can't change permissions on file.");
+    }
 }
 
 int main(int argc, char *argv[]) {
@@ -136,59 +178,61 @@ int main(int argc, char *argv[]) {
         printf("Usage: %s <action> <path>\n", argv[0]);
         return 1;
     }
-    char *action = argv[1];
-    char *path = argv[2];
+    char *action = argv[0];
+    char *path = argv[1];
 
-    if (strcmp(action, "create_directory") == 0) {
-        if (argc < 3) {
-            printf("Usage: %s create_directory <target> <link>\n", argv[0]);
+    if (strcmp(action, "./create_directory") == 0) {
+        if (argc != 3) {
+            printf("Usage: %s create_directory <path> <mode>\n", argv[0]);
             return 1;
         }
-        mode_t mode = strtol(argv[3], NULL, 8);
+        mode_t mode = strtol(argv[2], NULL, 8);
         create_directory(path, mode);
-    } else if (strcmp(action, "display_directory_contents") == 0) {
+    } else if (strcmp(action, "./display_directory_contents") == 0) {
         display_directory_contents(path);
-    } else if (strcmp(action, "remove_directory") == 0) {
+    } else if (strcmp(action, "./remove_directory") == 0) {
         remove_directory(path);
-    } else if (strcmp(action, "create_file") == 0) {
+    } else if (strcmp(action, "./create_file") == 0) {
         create_file(path);
-    } else if (strcmp(action, "display_file_contents") == 0) {
+    } else if (strcmp(action, "./display_file_contents") == 0) {
         display_file_contents(path);
-    } else if (strcmp(action, "remove_file") == 0) {
+    } else if (strcmp(action, "./remove_file") == 0) {
         remove_file(path);
-    } else if (strcmp(action, "create_symbolic_link") == 0) {
-        if (argc < 4) {
+    } else if (strcmp(action, "./create_symbolic_link") == 0) {
+        if (argc != 3) {
             printf("Usage: %s create_symbolic_link <target> <link>\n", argv[0]);
             return 1;
         }
-        char *target_path = argv[2];
-        char *link_path = argv[3];
+        char *target_path = argv[1];
+        char *link_path = argv[2];
         create_symbolic_link(target_path, link_path);
-    } else if (strcmp(action, "display_symbolic_link_contents") == 0) {
+    } else if (strcmp(action, "./display_symbolic_link_contents") == 0) {
         display_symbolic_link_contents(path);
-    } else if (strcmp(action, "display_symbolic_link_target_contents") == 0) {
+    } else if (strcmp(action, "./display_symbolic_link_target_contents") == 0) {
         display_symbolic_link_target_contents(path);
-    } else if (strcmp(action, "remove_symbolic_link") == 0) {
+    } else if (strcmp(action, "./remove_symbolic_link") == 0) {
         remove_symbolic_link(path);
-    } else if (strcmp(action, "create_hard_link")==0) {
+    } else if (strcmp(action, "./create_hard_link") == 0) {
         if (argc < 4) {
-            printf("Usage: %s create_symbolic_link <target> <link>\n", argv[0]);
+            printf("Usage: %s create_symbolic_link <path> <mode>\n", argv[0]);
             return 1;
         }
-        char *target_path = argv[2];
-        char *link_path = argv[3];
+        char *target_path = argv[1];
+        char *link_path = argv[2];
         create_hard_link(target_path, link_path);
-    } else if (strcmp(action, "remove_hard_link")==0) {
+    } else if (strcmp(action, "./remove_hard_link") == 0) {
         remove_hard_link(path);
-    } else if (strcmp(action, "display_permissions_and_hard_links")==0) {
+    } else if (strcmp(action, "./display_permissions_and_hard_links") == 0) {
         display_permissions_and_hard_links(path);
-    } else if (strcmp(action, "change_permissions")==0) {
-        if (argc < 3) {
+    } else if (strcmp(action, "./change_permissions") == 0) {
+        if (argc != 2) {
             printf("Usage: %s create_symbolic_link <target> <link>\n", argv[0]);
             return 1;
         }
-        mode_t mode = strtol(argv[3], NULL, 8);
+        mode_t mode = strtol(argv[2], NULL, 8);
         change_permissions(path, mode);
+    } else {
+        printf("Invalid format.\nUsage: %s <command> <args...>\n", argv[0]);
     }
     return 0;
 }
