@@ -16,7 +16,7 @@ long file_length(struct dirent *dir) {
 }
 
 void erase_format(char *name, char *format) {
-    int j = 0, is_format = 0, format_point = (int)strlen(name);
+    int j = 0, is_format = 0, format_point = (int) strlen(name);
     for (int i = 0; i < strlen(name); i++) {
         if (name[i] == '.') {
             format_point = i;
@@ -42,7 +42,7 @@ void reverse(char *name) {
 void read_file(struct dirent *dir, char *file_data) {
     FILE *f_in = fopen(dir->d_name, "r");
     fseek(f_in, 0, SEEK_END);
-    int size = (int)ftell(f_in);
+    int size = (int) ftell(f_in);
     fseek(f_in, 0, SEEK_SET);
     char *tmp = malloc(size * sizeof(char));
     do {
@@ -94,21 +94,23 @@ int main(int argc, char *argv[]) {
     }
     new_dirname[i] = '\0';
     chdir("..");
-    if (!(mkdir(new_dirname, 0700))) {
-        perror("Can't create directory.");
-        return 1;
-    }
+    mkdir(new_dirname, 0700);
     realpath(new_dirname, new_dirname);
 
     while ((dir = readdir(d)) != NULL) {
         if (strcmp(dir->d_name, ".") != 0 && strcmp(dir->d_name, "..") != 0) {
             chdir(dirname);
+            struct stat st;
+            stat(dir->d_name, &st);
+            if (S_ISDIR(st.st_mode) || S_ISLNK(st.st_mode)) {
+                continue;
+            }
             create_reverse_file_name(dir, file_name, file_data);
             size = file_length(dir);
+
             if (!file_data) {
                 file_data = malloc(size * sizeof(char));
-            }
-            else if (strlen(file_data) < size) {
+            } else if (strlen(file_data) < size) {
                 file_data = realloc(file_data, size * sizeof(char));
             }
             file_data[0] = '\0';
