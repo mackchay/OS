@@ -52,7 +52,7 @@ void add_pages() {
 int main() {
     printf("PID: %d\n", getpid());
     sleep(10);
-    //allocate_stack(0);
+    allocate_stack(0);
 //    allocate_heap();
     add_pages();
     return 0;
