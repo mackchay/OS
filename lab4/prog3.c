@@ -9,7 +9,7 @@
 void allocate_stack(int depth) {
     char buffer[SIZE];
     printf("Stack depth: %d\n", depth);
-    sleep(3);
+    usleep(10000);
     allocate_stack(depth + 1);
 }
 
