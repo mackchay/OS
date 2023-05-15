@@ -9,7 +9,7 @@
 void allocate_stack(int depth) {
     char buffer[SIZE];
     printf("Stack depth: %d\n", depth);
-    sleep(3);
+    usleep(10000);
     allocate_stack(depth + 1);
 }
 
@@ -52,7 +52,7 @@ void add_pages() {
 int main() {
     printf("PID: %d\n", getpid());
     sleep(10);
-    //allocate_stack(0);
+    allocate_stack(0);
 //    allocate_heap();
     add_pages();
     return 0;
