@@ -17,6 +17,7 @@ int main() {
         exit(1);
     }
     if (pid == 0) {
+        sleep(30);
         // child process
         printf("child process pid: %d, parent pid: %d\n", getpid(), getppid());
         printf("child global_var address: %p value: %d\n", &global_var, global_var);
