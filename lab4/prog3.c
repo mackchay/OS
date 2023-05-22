@@ -19,8 +19,8 @@ void allocate_heap() {
         buffer = (char *) malloc(1024 * 8 * 10); // Allocate 10 KB
         printf("Heap allocation: %p\n", buffer);
         sleep(2);
-        free(buffer);
     }
+    free(buffer);
 }
 
 void sigsegv_handler(int signal) {
@@ -38,8 +38,8 @@ void add_pages() {
         printf("mprotect error: %d\n", result);
     }
     signal(SIGSEGV, sigsegv_handler);
-//    char *ptr = (char *) map;
-//    char c = ptr[1];
+    char *ptr = (char *) map;
+    char c = ptr[1];
 //    ptr[1] = 'B';
     result = mprotect(map + 3 * getpagesize(), 3 * getpagesize(), PROT_READ);
     if (result != 0) {
@@ -52,7 +52,7 @@ void add_pages() {
 int main() {
     printf("PID: %d\n", getpid());
     sleep(10);
-    allocate_stack(0);
+    //allocate_stack(0);
 //    allocate_heap();
     add_pages();
     return 0;
