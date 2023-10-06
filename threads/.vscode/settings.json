@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "unistd.h": "c",
+        "__sigset_t.h": "c"
+    },
+    "editor.fontSize": 16
+}
