@@ -10,6 +10,7 @@ int mythread(void *args) {
     printf("my_thread [%d, %d, %d, %ld]: success.\n", getpid(), getppid(), gettid(), pthread_self());
     //pthread_detach(pthread_self());
     int a = 42;
+     
     return a;
 }
 
@@ -26,7 +27,8 @@ int main(void) {
     while (1)
     {
         pthread_create(&tid, NULL, (void*)mythread, NULL);
-        //pthread_join(tid, NULL);
+        pthread_detach(tid);
+        pthread_join(tid, NULL);
         sleep(1);
     }
 

@@ -19,7 +19,7 @@ void *my_thread(void *args) {
 
     int iter = 0;
     while (1) {
-        //printf("Hello from thread: %d\n", iter);
+        printf("Hello from thread: %d\n", iter);
         iter++;
         //pthread_testcancel();
     }
@@ -31,7 +31,7 @@ int main(void) {
 	int err;
     char *str = NULL;
 
-    pthread_cleanup_push(clean_up, str);
+    pthread_cleqanup_push(clean_up, str);
 	printf("main [%d %d %d]: Hello from main!\n", getpid(), getppid(), gettid());
     err = pthread_create(&tid, NULL, my_thread, NULL);
 	if (err) {
@@ -43,6 +43,6 @@ int main(void) {
     pthread_cancel(tid);
     pthread_join(tid, NULL);
     pthread_cleanup_pop(1);
-
+    
     return 0;
 }
