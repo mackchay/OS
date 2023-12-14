@@ -15,15 +15,16 @@ void *mythread1(void *arg) {
     printf("mythread1 | Pid: %d | Tid: %d | pthread_self: %ld\n", getpid(), gettid(), pthread_self());
     int err;
     sigset_t set;
+
     sigfillset(&set);
 
-    err = pthread_sigmask(SIG_BLOCK, &set, NULL);
+    err = sigprocmask(SIG_BLOCK, &set, NULL);
     if (err) {
         perror("mythread1(): pthread_sigmask() failed");
         return NULL;
     }
 
-    for (;;) {}
+    for(;;){};
 
     return NULL;
 }
@@ -66,6 +67,7 @@ void *mythread2(void *arg) {
 
 /* This thread catches SIGQUIT via sigwait() */
 void *mythread3(void *arg) {
+    
     printf("mythread3 | Pid: %d | Tid: %d | pthread_self: %ld\n", getpid(), gettid(), pthread_self());
     int err, signal;
     sigset_t set;

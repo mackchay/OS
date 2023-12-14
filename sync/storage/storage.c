@@ -19,17 +19,40 @@ void generate_random_string(char *str, int length) {
     }
 }
 
+Node *node_init(char *str) {
+    Node *node = malloc(sizeof(Node));
+    strcpy(node->value, str);
+    node->next = NULL;
+    int err = pthread_spin_init(&node->sync, 0);
+    if (err) {
+        printf("Can't create node_sync");
+        return NULL;
+    }
+    return node;
+}
+
 Storage *storage_init(int size) {
     Storage *storage = malloc(sizeof(Storage));
     storage->len = 0;
+    storage->first = NULL;
     char str[MAX_STR_SIZE];
+    Node *cur = NULL;
     for (int i = 0; i < size; i++) {
         if (i % MAX_STR_SIZE > 0) {
             generate_random_string(str, i % MAX_STR_SIZE);
         } else {
             generate_random_string(str, 1);
         }
-        storage_add_elem(storage, str);
+        printf("%d\n", i);
+
+        if (storage->first != NULL) {
+            cur->next = node_init(str);
+            cur = cur->next;
+        } else {
+            storage->first = node_init(str);
+            cur = storage->first;
+        }
+        //storage_add_elem(storage, str);
     }
     return storage;
 }
@@ -49,14 +72,6 @@ Node *storage_get_elem(Storage *storage, int key) {
         pthread_spin_unlock(&cur->sync);
     }
     return cur;
-}
-
-Node *node_init(char *str) {
-    Node *node = malloc(sizeof(Node));
-    strcpy(node->value, str);
-    node->next = NULL;
-    pthread_spin_init(&node->sync, 0);
-    return node;
 }
 
 Node *storage_add_elem(Storage *storage, char *str) {
